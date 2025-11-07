@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EduBot 🤖</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+    :root{
+      --bg1: #c9e4ff;
+      --bg2: #f0d9ff;
+      --primary: #0078ff;
+      --muted: #f3f4f6;
+      --card-bg: #ffffff;
+      --text: #222;
+    }
+    html,body{
+      height:100%;
+      margin:0;
+      font-family:'Poppins',sans-serif;
+      background: linear-gradient(135deg, var(--bg1), var(--bg2));
+      -webkit-font-smoothing:antialiased;
+    }
+
+    .main{
+      padding:1.5rem;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .app {
+      width:100%;
+      max-width:900px;
+      margin: 24px;
+    }
+
+    .header {
+      text-align:center;
+      font-size:1.8rem;
+      font-weight:700;
+      color:var(--text);
+      margin-bottom:1rem;
+    }
+
+    .chat-container{
+      background:var(--card-bg);
+      border-radius:20px;
+      padding:20px;
+      box-shadow:0 4px 25px rgba(0,0,0,0.1);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      height:70vh;
+    }
+
+    .messages {
+      flex:1;
+      overflow:auto;
+      padding:10px 8px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .user-bubble, .bot-bubble{
+      padding:12px 18px;
+      border-radius:15px;
+      max-width:80%;
+      width:fit-content;
+      box-shadow:0 2px 5px rgba(0,0,0,0.04);
+      word-wrap:break-word;
+      white-space:pre-wrap;
+    }
+
+    .user-bubble{
+      background:var(--primary);
+      color:white;
+      margin-left:auto;
+      border-radius:15px 15px 0 15px;
+      text-align:right;
+    }
+
+    .bot-bubble{
+      background:var(--muted);
+      color:var(--text);
+      border-radius:15px 15px 15px 0;
+    }
+
+    .controls{
+      display:flex;
+      gap:8px;
+      padding-top:12px;
+      align-items:center;
+    }
+
+    .input{
+      flex:1;
+      display:flex;
+      gap:8px;
+    }
+
+    textarea#userInput{
+      width:100%;
+      min-height:48px;
+      max-height:120px;
+      resize:vertical;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid rgba(0,0,0,0.08);
+      font-family:inherit;
+      font-size:14px;
+    }
+
+    button {
+      background:var(--primary);
+      color:white;
+      border:none;
+      padding:10px 14px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+    }
+
+    button.secondary {
+      background:#eee;
+      color:var(--text);
+    }
+
+    .meta{
+      font-size:12px;
+      color:#666;
+      text-align:center;
+      margin-top:8px;
+    }
+
+    pre.code{
+      background:#111;
+      color:#fff;
+      padding:10px;
+      border-radius:8px;
+      overflow:auto;
+      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+      font-size:13px;
+      line-height:1.35;
+    }
+
+    .chip-list {
+      display:flex;
+      gap:6px;
+      margin-bottom:8px;
+      flex-wrap:wrap;
+    }
+
+    .chip {
+      background:#fff;
+      border:1px solid rgba(0,0,0,0.06);
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:13px;
+      cursor:pointer;
+    }
+
+    .clear {
+      text-align:right;
+      margin-bottom:6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="main">
+    <div class="app" role="application" aria-label="EduBot chat">
+      <div class="header">🎓 EduBot — Your AI Learning Buddy 🤖</div>
+
+      <div class="chat-container" id="chatContainer">
+        <div class="chip-list" id="chipList"></div>
+
+        <div class="messages" id="messages" aria-live="polite" role="log"></div>
+
+        <div class="controls">
+          <div class="input">
+            <textarea id="userInput" placeholder="💬 Ask about AI, Python, ML, or algorithms..." aria-label="Chat input"></textarea>
+            <button id="sendBtn">Send</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <button id="clearBtn" class="secondary" title="Clear history">Clear</button>
+            <button id="downloadBtn" class="secondary" title="Download chat as text">Download</button>
+          </div>
+        </div>
+
+        <div class="meta">Local, client-side rule-based bot — works offline. Save the file, open in browser.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Knowledge base (copied from your Streamlit code)
+    const knowledgeBase = {
+      "python": {
+        "definition": "Python is a high-level, interpreted programming language known for its simplicity and readability.",
+        "example": "for (let i = 0; i < 5; i++) { console.log(i); }",
+        "tip": "Practice small coding challenges daily to strengthen your logic!"
+      },
+      "gen ai": {
+        "definition": "Generative AI (GenAI) creates new data (text, images, code) based on patterns learned from large datasets.",
+        "example": "ChatGPT, DALL·E, and Gemini are examples of GenAI systems.",
+        "tip": "Experiment with prompts — your phrasing shapes AI’s output!"
+      },
+      "llm": {
+        "definition": "Large Language Models (LLMs) are advanced AI systems trained on huge datasets to generate and understand text.",
+        "example": "GPT-4, Claude, and LLaMA are examples of LLMs.",
+        "tip": "Understand transformer architecture — it’s the foundation of LLMs."
+      },
+      "algorithms": {
+        "definition": "An algorithm is a step-by-step process to solve a specific problem.",
+        "example": "Merge Sort, Binary Search, Dijkstra’s Algorithm.",
+        "tip": "Always check time complexity to choose the best algorithm."
+      },
+      "sorting": {
+        "definition": "Sorting arranges data in a particular order.",
+        "example": "Quick Sort uses divide and conquer — fast and efficient.",
+        "tip": "Remember: Merge Sort is stable; Quick Sort is faster but not stable."
+      },
+      "machine learning": {
+        "definition": "Machine Learning allows systems to learn from data and make predictions.",
+        "example": "Linear Regression for prediction, Decision Trees for classification.",
+        "tip": "Start small — understand supervised vs. unsupervised learning first."
+      },
+      "neural networks": {
+        "definition": "Neural Networks are computing systems inspired by the human brain’s neurons.",
+        "example": "CNNs are used for images, RNNs for sequences like text or speech.",
+        "tip": "Understand how layers and activation functions work together."
+      },
+      "study": {
+        "definition": "Study smart, not hard — consistency beats cramming.",
+        "example": "Pomodoro technique: 25 min study + 5 min break.",
+        "tip": "Teach what you learn — it doubles understanding!"
+      }
+    };
+
+    // UI elements
+    const messagesEl = document.getElementById('messages');
+    const inputEl = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const chipList = document.getElementById('chipList');
+
+    // Create topic chips for quick asks
+    function setupChips(){
+      chipList.innerHTML = '';
+      Object.keys(knowledgeBase).forEach(k => {
+        const chip = document.createElement('button');
+        chip.className = 'chip';
+        chip.textContent = k;
+        chip.addEventListener('click', () => {
+          inputEl.value = k;
+          inputEl.focus();
+        });
+        chipList.appendChild(chip);
+      });
+    }
+    setupChips();
+
+    // Local storage for messages
+    const STORAGE_KEY = 'edubot_messages_v1';
+
+    function loadMessages(){
+      const json = localStorage.getItem(STORAGE_KEY);
+      if(!json) return [];
+      try { return JSON.parse(json); } catch { return []; }
+    }
+
+    function saveMessages(arr){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+    }
+
+    function appendMessage(role, content, save=true){
+      const m = document.createElement('div');
+      m.className = role === 'user' ? 'user-bubble' : 'bot-bubble';
+      // Render code blocks and simple formatting
+      if(role === 'bot' && content.includes('```')){
+        // handle triple-backtick code blocks: convert to <pre>
+        const parts = content.split('```');
+        // parts alternates: text, code, text, code...
+        const frag = document.createDocumentFragment();
+        parts.forEach((p, idx) => {
+          if(idx % 2 === 0){
+            const div = document.createElement('div');
+            div.innerHTML = p.replace(/\n/g,'<br>');
+            frag.appendChild(div);
+          } else {
+            const pre = document.createElement('pre');
+            pre.className = 'code';
+            pre.textContent = p.trim();
+            frag.appendChild(pre);
+          }
+        });
+        m.appendChild(frag);
+      } else {
+        // simple newline -> <br>
+        m.innerHTML = content.replace(/\n/g,'<br>');
+      }
+
+      messagesEl.appendChild(m);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+
+      if(save){
+        const all = loadMessages();
+        all.push({role, content});
+        saveMessages(all);
+      }
+    }
+
+    // Render stored messages on load
+    (function restore(){
+      const arr = loadMessages();
+      if(arr.length === 0){
+        // greeting from bot
+        appendMessage('bot', "Hi — I'm EduBot! Ask about Python, ML, algorithms, or study tips. Try clicking a topic below.", true);
+      } else {
+        arr.forEach(msg => appendMessage(msg.role, msg.content, false));
+      }
+    })();
+
+    // Rule-based response generator (mimics your Python logic)
+    function generateResponse(userText){
+      const lowered = userText.toLowerCase();
+      for(const topic in knowledgeBase){
+        if(lowered.includes(topic.toLowerCase())){
+          const info = knowledgeBase[topic];
+          // Construct content similar to your Streamlit response
+          let resp = `<strong>📘 ${topic.charAt(0).toUpperCase()+topic.slice(1)}</strong>\n\n`;
+          resp += `📖 <strong>Definition:</strong> ${info.definition}\n\n`;
+          resp += `💡 <strong>Example:</strong>\n\`\`\`\n${info.example}\n\`\`\`\n\n`;
+          resp += `✨ <strong>Tip:</strong> ${info.tip}`;
+          return resp;
+        }
+      }
+      return "🤔 I’m not sure about that yet. Try asking about AI, Python, or algorithms.";
+    }
+
+    // Send handler
+    function send(){
+      const text = inputEl.value.trim();
+      if(!text) return;
+      appendMessage('user', text);
+      inputEl.value = '';
+      inputEl.disabled = true;
+      sendBtn.disabled = true;
+
+      // Simulate thinking delay (short)
+      setTimeout(()=>{
+        const botResp = generateResponse(text);
+        appendMessage('bot', botResp);
+        inputEl.disabled = false;
+        sendBtn.disabled = false;
+        inputEl.focus();
+      }, 300);
+    }
+
+    // Buttons
+    sendBtn.addEventListener('click', send);
+    inputEl.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' && !e.shiftKey){
+        e.preventDefault();
+        send();
+      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      if(confirm('Clear chat history?')){
+        localStorage.removeItem(STORAGE_KEY);
+        messagesEl.innerHTML = '';
+        appendMessage('bot', "Chat cleared. Hi again — I'm EduBot! Ask about Python, ML, algorithms, or study tips.");
+      }
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      const arr = loadMessages();
+      const text = arr.map(m => `${m.role.toUpperCase()}: ${m.content.replace(/<[^>]*>/g,'')}`).join('\n\n');
+      const blob = new Blob([text], {type: 'text/plain'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'edubot_chat.txt';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    // Accessibility: focus input on load
+    window.addEventListener('load', () => {
+      inputEl.focus();
+    });
+  </script>
+</body>
+</html>
